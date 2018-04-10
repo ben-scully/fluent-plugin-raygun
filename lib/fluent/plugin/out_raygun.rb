@@ -16,7 +16,6 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
 
   def initialize
     require 'time'
-    require 'raygun4ruby'
 
     super
   end
@@ -34,16 +33,22 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
 
     hostname_command = @hostname_command || DEFAULT_HOSTNAME_COMMAND
     @hostname = `#{hostname_command}`.chomp
-
-    Raygun.setup do |config|
-      config.api_key = @api_key
-      config.filter_parameters = [ :password, :card_number, :cvv ] # don't forget to filter out sensitive parameters
-      config.enable_reporting = true # true to send errors, false to not log
-    end
   end
 
   def start
     super
+
+    require 'net/http/persistent'
+    require 'uri'
+
+    @uri = URI @endpoint_url
+    @http = Net::HTTP::Persistent.new
+    @http.headers['Content-Type'] = 'text/json'
+    @http.headers['X-ApiKey'] = @api_key
+    @http.idle_timeout = 10
+    @http.socket_options << [Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, 1]
+
+    log.debug "Started Raygun fluent shipper.."
   end
 
   def format(tag, time, record)
@@ -65,10 +70,22 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
   end
 
   def notify_raygun(tag, time, record)
-    #TODO: Create error object, also verify this tag creation will work
-    #TODO: error should use the message from record['message']
-    #TODO: Can we set other properties on what is being sent, like time occurred?
+    payload = {
+      occurredOn: Time.at(time).utc.iso8601,
+      details: {
+	machineName: @hostname,
+        error: {
+	  message: record['messages']
+	},
+	tags: [tag],
+      }
+    }
 
-    Raygun.track_exception(e, tags: { :tag => tag }.merge(record['tags'] || {}))
+    post = Net::HTTP::Post.new(
+      "#{@endpoint_url}/entries?apikey=#{URI::encode(@api_key)}",
+    )
+    post.body = JSON.generate(payload)
+
+    response = @http.request(@uri, post)
   end
 end
