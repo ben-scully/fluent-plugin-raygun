@@ -4,7 +4,7 @@ fluent-plugin-raygun is a fluentd output plugin that sends aggregated errors/exc
 
 ## Copyright
 
-Copyright © 2018 - John-Daniel Trask ([@traskjd](https://twitter.com/traskjd))
+Copyright © 2018 - Raygun ([@raygunio](https://twitter.com/raygunio))
 
 ## License
 
