@@ -3,16 +3,16 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
 
   include Fluent::HandleTagNameMixin
 
-  LOG_LEVEL = %w(fatal error warning info debug)
-  EVENT_KEYS = %w(message timestamp time_spent level logger culprit server_name release tags)
-  DEFAULT_HOSTNAME_COMMAND = 'hostname'
+  LOG_LEVEL = %w[fatal error warning info debug].freeze
+  EVENT_KEYS = %w[message timestamp time_spent level logger culprit server_name release tags].freeze
+  DEFAULT_HOSTNAME_COMMAND = 'hostname'.freeze
 
-  config_param :default_level, :string, :default => 'error'
-  config_param :default_logger, :string, :default => 'fluentd'
-  config_param :endpoint_url, :string, :default => 'https://api.raygun.com'
+  config_param :default_level, :string, default: 'error'
+  config_param :default_logger, :string, default: 'fluentd'
+  config_param :endpoint_url, :string, default: 'https://api.raygun.com'
   config_param :api_key, :string
-  config_param :flush_interval, :time, :default => 0
-  config_param :hostname_command, :string, :default => 'hostname'
+  config_param :flush_interval, :time, default: 0
+  config_param :hostname_command, :string, default: 'hostname'
 
   def initialize
     require 'time'
@@ -48,7 +48,7 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
     @http.idle_timeout = 10
     @http.socket_options << [Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, 1]
 
-    log.debug "Started Raygun fluent shipper.."
+    log.debug 'Started Raygun fluent shipper..'
   end
 
   def format(tag, time, record)
@@ -63,8 +63,8 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
     chunk.msgpack_each do |tag, time, record|
       begin
         notify_raygun(tag, time, record)
-      rescue => e
-        $log.error("Raygun Error:", :error_class => e.class, :error => e.message)
+      rescue StandardError => e
+        $log.error('Raygun Error:', error_class: e.class, error: e.message)
       end
     end
   end
@@ -73,16 +73,16 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
     payload = {
       occurredOn: Time.at(time).utc.iso8601,
       details: {
-	machineName: @hostname,
+        machineName: @hostname,
         error: {
-	  message: record['messages']
-	},
-	tags: [tag],
+          message: record['messages']
+        },
+        tags: [tag]
       }
     }
 
     post = Net::HTTP::Post.new(
-      "#{@endpoint_url}/entries?apikey=#{URI::encode(@api_key)}",
+      "#{@endpoint_url}/entries?apikey=#{URI.encode(@api_key)}"
     )
     post.body = JSON.generate(payload)
 
