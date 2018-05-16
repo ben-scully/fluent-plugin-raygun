@@ -55,10 +55,6 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
     [tag, time, record].to_msgpack
   end
 
-  def shutdown
-    super
-  end
-
   def write(chunk)
     chunk.msgpack_each do |tag, time, record|
       begin
