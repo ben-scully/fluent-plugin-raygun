@@ -82,6 +82,6 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
     )
     post.body = JSON.generate(payload)
 
-    response = @http.request(@uri, post)
+    @http.request(@uri, post)
   end
 end
