@@ -1,29 +1,29 @@
-require 'helper'
-require 'webmock/test_unit'
-require 'yajl'
-
-WebMock.disable_net_connect!
+require 'test_helper'
+require 'fluent/test/driver/output'
+require 'fluent/plugin/out_raygun'
 
 class RaygunOutputTest < Test::Unit::TestCase
+  def create_driver(conf)
+    Fluent::Test::Driver::Output.new(Fluent::Plugin::RaygunOutput).configure(conf)
+  end
+
   def setup
     Fluent::Test.setup
   end
 
-  CONFIG = %[
+  CONFIG = %(
     type raygun
     endpoint_url      https://api.raygun.com
     api_key           abc123
     hostname_command  hostname -s
     remove_tag_prefix input.
-  ]
+  ).freeze
 
-  def create_driver(conf=CONFIG,tag='test',use_v1=false)
-    require 'fluent/version'
-    if Gem::Version.new(Fluent::VERSION) < Gem::Version.new('0.12')
-      Fluent::Test::OutputTestDriver.new(Fluent::RaygunOutput, tag).configure(conf, use_v1)
-    else
-      Fluent::Test::BufferedOutputTestDriver.new(Fluent::RaygunOutput, tag).configure(conf, use_v1)
+  sub_test_case 'configure' do
+    test 'empty' do
+      assert_raise(Fluent::ConfigError) do
+        create_driver('')
+      end
     end
   end
-
 end
