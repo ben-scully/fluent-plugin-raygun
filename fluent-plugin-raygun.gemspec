@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "fluent-plugin-raygun"
-  spec.version       = "0.0.1"
+  spec.version       = "0.0.2"
   spec.authors       = ["Taylor Lodge"]
   spec.email         = ["taylor@raygun.io"]
   spec.summary       = %q{Fluentd output plugin that sends aggregated errors/exception events to Raygun. Raygun is a error logging and aggregation platform.}

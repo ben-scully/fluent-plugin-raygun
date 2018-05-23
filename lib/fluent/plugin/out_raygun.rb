@@ -13,6 +13,7 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
   config_param :api_key, :string
   config_param :flush_interval, :time, default: 0
   config_param :hostname_command, :string, default: 'hostname'
+  config_param :record_already_formatted, :bool, default: false
 
   def initialize
     require 'time'
@@ -66,7 +67,25 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
   end
 
   def notify_raygun(tag, time, record)
-    payload = {
+    payload =
+      if @record_already_formatted
+        # Setting @record_already_formatted = true, means you
+        # are already happy with the formatting of 'record'
+        record
+      else
+        default_payload_format(tag, time, record)
+      end
+
+    post = Net::HTTP::Post.new(
+      "#{@endpoint_url}/entries?apikey=#{URI.encode(@api_key)}"
+    )
+    post.body = JSON.generate(payload)
+
+    @http.request(@uri, post)
+  end
+
+  def default_payload_format(tag, time, record)
+    {
       occurredOn: Time.at(time).utc.iso8601,
       details: {
         machineName: @hostname,
@@ -76,12 +95,5 @@ class Fluent::RaygunOutput < Fluent::BufferedOutput
         tags: [tag]
       }
     }
-
-    post = Net::HTTP::Post.new(
-      "#{@endpoint_url}/entries?apikey=#{URI.encode(@api_key)}"
-    )
-    post.body = JSON.generate(payload)
-
-    @http.request(@uri, post)
   end
 end
